@@ -1,0 +1,103 @@
+{
+  "updated_at": "2025-12-30 14:04:19",
+  "portfolio": {
+    "total_value": 752549.813659668,
+    "cash": 0.0,
+    "day_pnl": -15781.88634033205,
+    "day_pnl_pct": -2.054045972635523,
+    "total_pnl_val": 436920.91365966795,
+    "total_pnl_pct": 138.4286780011805
+  },
+  "positions": [
+    {
+      "symbol": "TSLA",
+      "quantity": 881,
+      "cost_basis": 220.5,
+      "current_price": 459.6400146484375,
+      "market_value": 404942.85290527344,
+      "pnl_percent": 108.45352138251134,
+      "day_pnl": -13179.747094726583,
+      "allocation_percent": 53.80944165490209
+    },
+    {
+      "symbol": "NVDA",
+      "quantity": 628,
+      "cost_basis": 45.3,
+      "current_price": 188.22000122070312,
+      "market_value": 118202.16076660156,
+      "pnl_percent": 315.49669143643075,
+      "day_pnl": -1205.759233398429,
+      "allocation_percent": 15.706888583465537
+    },
+    {
+      "symbol": "QQQM",
+      "quantity": 414,
+      "cost_basis": 180.0,
+      "current_price": 255.64999389648438,
+      "market_value": 105839.09747314453,
+      "pnl_percent": 42.02777438693576,
+      "day_pnl": -525.7825268554753,
+      "allocation_percent": 14.064065335216341
+    },
+    {
+      "symbol": "TSM",
+      "quantity": 200,
+      "cost_basis": 0.0,
+      "current_price": 300.9200134277344,
+      "market_value": 60184.002685546875,
+      "pnl_percent": 0.0,
+      "day_pnl": -411.1973144531248,
+      "allocation_percent": 7.997344706375066
+    },
+    {
+      "symbol": "META",
+      "quantity": 30,
+      "cost_basis": 330.0,
+      "current_price": 658.6900024414062,
+      "market_value": 19760.700073242188,
+      "pnl_percent": 99.60303104285038,
+      "day_pnl": -117.89992675781264,
+      "allocation_percent": 2.6258328305398715
+    },
+    {
+      "symbol": "QQQ",
+      "quantity": 30,
+      "cost_basis": 0.0,
+      "current_price": 620.8699951171875,
+      "market_value": 18626.099853515625,
+      "pnl_percent": 0.0,
+      "day_pnl": -83.10014648437459,
+      "allocation_percent": 2.475065373139414
+    },
+    {
+      "symbol": "AMZN",
+      "quantity": 50,
+      "cost_basis": 145.0,
+      "current_price": 232.07000732421875,
+      "market_value": 11603.500366210938,
+      "pnl_percent": 60.04828091325432,
+      "day_pnl": -20.249633789062216,
+      "allocation_percent": 1.5418913347121614
+    },
+    {
+      "symbol": "PLTR",
+      "quantity": 50,
+      "cost_basis": 25.0,
+      "current_price": 184.17999267578125,
+      "market_value": 9208.999633789062,
+      "pnl_percent": 636.719970703125,
+      "day_pnl": -215.75036621093773,
+      "allocation_percent": 1.223706320383693
+    },
+    {
+      "symbol": "IBKR",
+      "quantity": 64,
+      "cost_basis": 0.0,
+      "current_price": 65.3499984741211,
+      "market_value": 4182.39990234375,
+      "pnl_percent": 0.0,
+      "day_pnl": -22.400097656250182,
+      "allocation_percent": 0.5557638612658261
+    }
+  ]
+}

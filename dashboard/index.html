@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Investment Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- 添加版本号 v=2 强制刷新缓存 -->
+    <link rel="stylesheet" href="styles.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <span class="icon">📊</span>
+                <h1>Investment Tracking</h1>
+            </div>
+            <div class="status">
+                <span id="update-time">Last updated: --:--</span>
+                <div class="indicator"></div>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="card kpi-card">
+                <div class="icon-box">💰</div>
+                <h3>Total Value</h3>
+                <div class="value" id="total-value">$0.00</div>
+            </div>
+            <div class="card kpi-card">
+                <div class="icon-box">📈</div>
+                <h3>Day P&L</h3>
+                <div class="value positive" id="total-pnl">+$0.00 (+0.0%)</div>
+            </div>
+            <div class="card kpi-card">
+                <div class="icon-box">👛</div>
+                <h3>Cash</h3>
+                <div class="value" id="cash-value">$5,400.00</div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Holdings Table -->
+            <div class="card holdings-section">
+                <div class="card-header">
+                    <h3>Holdings Overview</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Shares</th>
+                                <th>Price</th>
+                                <th>Alloc %</th>
+                                <th>P&L %</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Allocation Chart -->
+            <div class="card chart-section">
+                <div class="card-header">
+                    <h3>Portfolio Allocation</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="allocationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="card trend-section">
+            <div class="card-header">
+                <h3>Portfolio Value (30 Days)</h3>
+            </div>
+            <div class="chart-container wide">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

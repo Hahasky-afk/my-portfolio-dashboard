@@ -1,0 +1,35 @@
+{
+    "updated_at": "2025-12-30 12:00:00",
+    "portfolio": {
+        "total_value": 1000000.00,
+        "total_pnl_val": 250000.00,
+        "total_pnl_pct": 33.33,
+        "cash": 50000.00
+    },
+    "positions": [
+        {
+            "symbol": "DEMO",
+            "quantity": 100,
+            "cost_basis": 100.00,
+            "current_price": 150.00,
+            "market_value": 15000.00,
+            "pnl_percent": 50.00
+        },
+        {
+            "symbol": "TEST",
+            "quantity": 200,
+            "cost_basis": 50.00,
+            "current_price": 80.00,
+            "market_value": 16000.00,
+            "pnl_percent": 60.00
+        },
+        {
+            "symbol": "AI",
+            "quantity": 500,
+            "cost_basis": 20.00,
+            "current_price": 45.00,
+            "market_value": 22500.00,
+            "pnl_percent": 125.00
+        }
+    ]
+}

@@ -1,0 +1,40 @@
+name: Portfolio Auto Update
+
+on:
+  schedule:
+    # 美股交易时段 (每小时运行一次)
+    # UTC 13:00 - 21:00 (夏令时对应美东 9:00 - 17:00)
+    - cron: '0 13-21 * * 1-5'
+  workflow_dispatch: # 允许手动点击运行
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install pandas yfinance lxml
+
+    - name: Run Portfolio Updater
+      run: |
+        python main.py
+
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "Portfolio Bot"
+        git config --global user.email "bot@github.com"
+        git add dashboard/data.json dashboard/history.json
+        # 只有当有变化时才提交
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update portfolio data" && git push)
