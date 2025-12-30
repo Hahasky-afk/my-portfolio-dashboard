@@ -109,3 +109,58 @@ BrokenPipeError: [Errno 32] Broken pipe
 127.0.0.1 - - [30/Dec/2025 14:05:48] "GET /history.json?t=1767074748372 HTTP/1.1" 200 -
 192.168.6.129 - - [30/Dec/2025 14:05:49] "GET /data.json?t=1767074747529 HTTP/1.1" 200 -
 192.168.6.129 - - [30/Dec/2025 14:05:49] "GET /history.json?t=1767074747529 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET / HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /manifest.json HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /styles.css?v=2 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /script.js HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /styles.css HTTP/1.1" 304 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /history.json?t=1767074754240 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /history.json?t=1767074754240 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /data.json?t=1767074754240 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /data.json?t=1767074754240 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:05:56] "GET /api/refresh HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:05] code 404, message File not found
+192.168.6.129 - - [30/Dec/2025 14:06:05] "GET /icon.png HTTP/1.1" 404 -
+192.168.6.129 - - [30/Dec/2025 14:06:05] "GET / HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /manifest.json HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /script.js HTTP/1.1" 304 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /history.json?t=1767074763934 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /data.json?t=1767074763934 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /data.json?t=1767074763934 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /history.json?t=1767074763935 HTTP/1.1" 200 -
+192.168.6.129 - - [30/Dec/2025 14:06:06] "GET /api/refresh HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('192.168.6.129', 56329)
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socketserver.py", line 318, in _handle_request_noblock
+    self.process_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socketserver.py", line 349, in process_request
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/k.young/Desktop/gemini cli/01-system/tools/ibkr-dashboard/server.py", line 15, in __init__
+    super().__init__(*args, directory=DIRECTORY, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/server.py", line 436, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/server.py", line 424, in handle_one_request
+    method()
+    ~~~~~~^^
+  File "/Users/k.young/Desktop/gemini cli/01-system/tools/ibkr-dashboard/server.py", line 43, in do_GET
+    self.wfile.write(json.dumps(response).encode())
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/socketserver.py", line 845, in write
+    self._sock.sendall(b)
+    ~~~~~~~~~~~~~~~~~~^^^
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
