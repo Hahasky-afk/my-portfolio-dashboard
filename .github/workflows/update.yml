@@ -2,9 +2,9 @@ name: Portfolio Auto Update
 
 on:
   schedule:
-    # 美股交易时段 (每 15 分钟运行一次)
+    # 美股交易时段 (每小时运行一次)
     # UTC 13:00 - 21:00 (夏令时对应美东 9:00 - 17:00)
-    - cron: '*/15 13-21 * * 1-5'
+    - cron: '0 13-21 * * 1-5'
   workflow_dispatch: # 允许手动点击运行
 
 permissions:
