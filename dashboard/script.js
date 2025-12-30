@@ -385,3 +385,152 @@ function updateTrendChart(history) {
         });
     }
 }
+    // --- Market Status Indicator ---
+    function updateMarketStatus() {
+        const statusEl = document.getElementById('market-status');
+        if (!statusEl) return;
+        
+        // Get current time in US Eastern
+        const now = new Date();
+        const options = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
+        const etTime = new Intl.DateTimeFormat('en-US', options).format(now);
+        const [hour, minute] = etTime.split(':').map(Number);
+        const totalMinutes = hour * 60 + minute;
+        
+        // Get day of week (0 = Sunday)
+        const dayOptions = { timeZone: 'America/New_York', weekday: 'short' };
+        const dayOfWeek = new Intl.DateTimeFormat('en-US', dayOptions).format(now);
+        
+        let status = 'closed';
+        let emoji = '⚪';
+        let text = 'Closed';
+        
+        // Weekend check
+        if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') {
+            status = 'closed';
+        } else {
+            // Pre-market: 4:00 - 9:30 (240 - 570 min)
+            // Regular:    9:30 - 16:00 (570 - 960 min)
+            // After:     16:00 - 20:00 (960 - 1200 min)
+            if (totalMinutes >= 240 && totalMinutes < 570) {
+                status = 'pre-market';
+                emoji = '🟡';
+                text = 'Pre-Market';
+            } else if (totalMinutes >= 570 && totalMinutes < 960) {
+                status = 'trading';
+                emoji = '🟢';
+                text = 'Trading';
+            } else if (totalMinutes >= 960 && totalMinutes < 1200) {
+                status = 'after-hours';
+                emoji = '🟠';
+                text = 'After-Hours';
+            }
+        }
+        
+        statusEl.textContent = emoji + ' ' + text;
+        statusEl.className = 'market-status ' + status;
+    }
+    
+    // Update every minute
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 60000);
+
+    // --- Concentration Warning ---
+    function checkConcentration(holdings, totalValue) {
+        const threshold = 0.30; // 30%
+        const warnings = [];
+        
+        holdings.forEach(h => {
+            const pct = h.value / totalValue;
+            if (pct > threshold) {
+                warnings.push({
+                    symbol: h.symbol,
+                    percentage: (pct * 100).toFixed(1)
+                });
+            }
+        });
+        
+        return warnings;
+    }
+    
+    function applyConcentrationWarnings(warnings) {
+        // Add warning to table rows
+        warnings.forEach(w => {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const symbolCell = row.querySelector('.symbol-cell');
+                if (symbolCell && symbolCell.textContent.includes(w.symbol)) {
+                    row.classList.add('high-concentration');
+                    // Add warning icon if not already there
+                    if (!symbolCell.querySelector('.concentration-warning')) {
+                        const warningSpan = document.createElement('span');
+                        warningSpan.className = 'concentration-warning';
+                        warningSpan.textContent = '⚠️';
+                        warningSpan.title = '持仓占比超过30%，存在集中度风险';
+                        symbolCell.appendChild(warningSpan);
+                    }
+                }
+            });
+        });
+    }
+
+    // --- Time Range Selector ---
+    let currentTimeRange = 30;
+    
+    function setupTimeSelector() {
+        const buttons = document.querySelectorAll('.time-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                buttons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTimeRange = parseInt(btn.dataset.days);
+                fetchHistory();
+            });
+        });
+    }
+    
+    async function fetchHistory() {
+        try {
+            const response = await fetch(`history.json?t=${new Date().getTime()}`);
+            if (!response.ok) return;
+            const history = await response.json();
+            
+            // Filter by time range
+            const now = new Date();
+            const cutoff = new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
+            const filtered = history.filter(h => new Date(h.date) >= cutoff);
+            
+            updateTrendChart(filtered);
+        } catch (e) {
+            console.error('Error fetching history:', e);
+        }
+    }
+    
+    setupTimeSelector();
+
+    // --- Pull to Refresh ---
+    let touchStartY = 0;
+    let isPulling = false;
+    
+    document.addEventListener('touchstart', (e) => {
+        if (window.scrollY === 0) {
+            touchStartY = e.touches[0].clientY;
+        }
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (window.scrollY === 0 && e.touches[0].clientY > touchStartY + 60) {
+            isPulling = true;
+            document.body.classList.add('ptr-pulling');
+        }
+    }, { passive: true });
+    
+    document.addEventListener('touchend', async () => {
+        if (isPulling) {
+            isPulling = false;
+            document.body.classList.remove('ptr-pulling');
+            // Trigger refresh
+            const refreshBtn = document.getElementById('refresh-btn');
+            if (refreshBtn) refreshBtn.click();
+        }
+    });
