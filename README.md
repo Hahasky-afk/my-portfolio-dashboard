@@ -75,3 +75,4 @@ python3 main.py
 
 *   **现金 (Cash)**: 在 `manual_portfolio.py` 中修改 `TOTAL_CASH` 变量来调整现金余额。
 *   **期权/复杂标的**: 如果 Yahoo 搜不到代码，可以在条目中增加 `"manual_price": 1.5` 来手动指定价格。
+Last deployment trigger: Wed Dec 31 10:19:02 CST 2025
