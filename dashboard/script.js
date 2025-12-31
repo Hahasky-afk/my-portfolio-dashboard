@@ -214,10 +214,12 @@ function updateTable(positions) {
     if (!tbody) return;
 
     tbody.innerHTML = positions.map(p => {
-        // 使用日盈亏百分比
-        const pnlPct = p.day_pnl_percent || 0;
-        const pnlClass = pnlPct >= 0 ? 'positive' : 'negative';
-        const sign = pnlPct >= 0 ? '+' : '';
+        // 显示日盈亏金额和百分比
+        const dayPnl = p.day_pnl || 0;
+        const dayPct = p.day_pnl_percent || 0;
+        const pnlClass = dayPnl >= 0 ? 'positive' : 'negative';
+        const sign = dayPnl >= 0 ? '+' : '';
+
         return `
             <tr>
                 <td>
@@ -229,7 +231,10 @@ function updateTable(positions) {
                 <td>${p.quantity}</td>
                 <td>${formatCurrency(p.current_price)}</td>
                 <td style="color:#a0a0a0">${(p.allocation_percent || 0).toFixed(1)}%</td>
-                <td class="${pnlClass}">${sign}${pnlPct.toFixed(2)}%</td>
+                <td class="${pnlClass}">
+                    <div style="font-weight:500">${sign}${formatCurrency(dayPnl)}</div>
+                    <div style="font-size:11px; opacity:0.8">${sign}${dayPct.toFixed(2)}%</div>
+                </td>
                 <td>${formatCurrency(p.market_value)}</td>
             </tr>
         `;

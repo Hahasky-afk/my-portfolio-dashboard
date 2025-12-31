@@ -35,9 +35,40 @@ def generate_snapshot_data():
     
     # 批量获取当前数据
     tickers_dict = {}
+    prev_closes = {}
+    current_prices = {}
+    
     if fetch_list:
-        tickers = yf.Tickers(' '.join(fetch_list))
-        tickers_dict = tickers.tickers
+        try:
+            # 使用 download 获取最近5天数据，确保能拿到昨收
+            # group_by='ticker' 方便处理
+            hist = yf.download(fetch_list, period="5d", progress=False, group_by='ticker')
+            
+            # 遍历每个标的处理数据
+            for sym in fetch_list:
+                try:
+                    # 处理单个 ticker 数据 (如果是单个标的，结构不同，需要判断)
+                    if len(fetch_list) == 1:
+                        df = hist
+                    else:
+                        df = hist[sym]
+                    
+                    # 移除空行
+                    df = df.dropna()
+                    
+                    if not df.empty and len(df) >= 2:
+                        # 有至少两天数据
+                        current_prices[sym] = float(df['Close'].iloc[-1])
+                        prev_closes[sym] = float(df['Close'].iloc[-2])
+                    elif not df.empty:
+                        # 只有一天数据 (IPO? 或数据缺失)
+                        current_prices[sym] = float(df['Close'].iloc[-1])
+                        prev_closes[sym] = float(df['Open'].iloc[-1]) # Fallback to open
+                except Exception as e:
+                    print(f"Error parse hist for {sym}: {e}")
+                    
+        except Exception as e:
+            print(f"Batch download failed: {e}")
 
     day_pnl_map = {}
     
@@ -46,29 +77,23 @@ def generate_snapshot_data():
         current_price = 0.0
         prev_close = 0.0
         
-        # 手动定价
+        # 手动定价优先
         if 'manual_price' in p:
             current_price = float(p['manual_price'])
             prev_close = current_price
         else:
-            # 自动获取
-            try:
-                if sym in tickers_dict:
-                    t = tickers_dict[sym]
-                    # 尝试 fast_info
+            # 使用批量获取的数据
+            current_price = current_prices.get(sym, 0.0)
+            prev_close = prev_closes.get(sym, 0.0)
+            
+            # 如果批量失败，尝试备用方案 (fast_info) -- 仅作为最后的防线
+            if current_price == 0:
+                try:
+                    t = yf.Ticker(sym)
                     if hasattr(t, 'fast_info'):
-                        fi = t.fast_info
-                        if hasattr(fi, 'last_price'): current_price = fi.last_price
-                        if hasattr(fi, 'previous_close'): prev_close = fi.previous_close
-                    
-                    # 回退到 info
-                    if not current_price:
-                        info = t.info
-                        current_price = info.get('currentPrice') or info.get('regularMarketPrice')
-                        if not prev_close:
-                            prev_close = info.get('previousClose') or info.get('regularMarketPreviousClose')
-            except Exception as e:
-                print(f"Warning: Failed to fetch {sym}: {e}")
+                        if hasattr(t.fast_info, 'last_price'): current_price = t.fast_info.last_price
+                        if hasattr(t.fast_info, 'previous_close'): prev_close = t.fast_info.previous_close
+                except: pass
 
         # 计算持仓数据
         if current_price:
@@ -94,6 +119,7 @@ def generate_snapshot_data():
         else:
             p['market_value'] = 0.0
             p['day_pnl'] = 0.0
+            p['day_pnl_percent'] = 0.0
 
     # 3. 汇总组合数据
     total_market_value = sum(p.get('market_value', 0) for p in positions)
