@@ -48,13 +48,24 @@ def generate_snapshot_data():
             for sym in fetch_list:
                 try:
                     # 处理单个 ticker 数据 (如果是单个标的，结构不同，需要判断)
+                    df = None
                     if len(fetch_list) == 1:
                         df = hist
                     else:
-                        df = hist[sym]
+                        # 检查列是否存在 (防御性编程)
+                        if isinstance(hist.columns, pd.MultiIndex):
+                             if sym in hist.columns.levels[0]:
+                                 df = hist[sym]
+                        elif sym in hist: # 兼容非MultiIndex情况
+                             df = hist[sym]
                     
+                    if df is None:
+                        print(f"Warning: No data found for {sym} in batch result")
+                        continue
+
                     # 移除空行
                     df = df.dropna()
+
                     
                     if not df.empty and len(df) >= 2:
                         # 有至少两天数据
