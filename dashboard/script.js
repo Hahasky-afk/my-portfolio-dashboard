@@ -1,107 +1,116 @@
 document.addEventListener('DOMContentLoaded', () => {
-    fetchData();
-    // 初始加载现有数据
-    fetchData();
+    fetchData(); // 初始加载
 
     // 自动触发更新
-    refreshData();
-
-    // 每一分钟刷新一次视图 (不触发后端更新，只读 JSON)
-    setInterval(fetchData, 60000);
-
     setupRefreshButton();
+
+    // 每一分钟自动刷新一次
+    setInterval(fetchData, 60000);
 });
 
-// 新增：触发后端更新
-async function refreshData() {
-    const btn = document.getElementById('refresh-btn');
-    const status = document.getElementById('update-status');
-
-    if (btn) {
-        btn.disabled = true;
-        btn.classList.add('spinning');
-    }
-    if (status) status.textContent = "Updating prices...";
-
-    try {
-        const res = await fetch('/api/refresh');
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            console.log("Update success:", data.message);
-            fetchData(); // 重新加载最新数据
-            if (status) status.textContent = "Updates received";
-            setTimeout(() => { if (status) status.textContent = ""; }, 3000);
-        } else {
-            console.error("Update failed:", data.message);
-            if (status) status.textContent = "Update failed";
-        }
-    } catch (e) {
-        console.warn("Auto-refresh skipped (Backend not running?)");
-        if (status) status.textContent = "";
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('spinning');
-        }
-    }
-}
-
-let allocationChart = null;
-let trendChart = null;
+// 全局数据缓存
+window.chartHistory = [];
 
 async function fetchData() {
+    const status = document.getElementById('update-status');
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (status) status.textContent = "Updating...";
+    if (refreshBtn) refreshBtn.classList.add('spinning');
+
     try {
-        // 尝试加载真实数据
-        let data, history;
+        let snapshot, history;
         let isDemo = false;
+        let isApi = false;
 
+        // 1. 优先尝试 Vercel Serverless API (实时数据)
         try {
-            const [dataRes, historyRes] = await Promise.all([
-                fetch('data.json?t=' + Date.now()),
-                fetch('history.json?t=' + Date.now())
-            ]);
+            // 添加时间戳防止缓存
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8秒超时
 
-            if (!dataRes.ok || !historyRes.ok) throw new Error("Missing real data");
+            const res = await fetch('/api/index?t=' + Date.now(), { signal: controller.signal });
+            clearTimeout(timeoutId);
 
-            data = await dataRes.json();
-            history = await historyRes.json();
-        } catch (realDataError) {
-            console.warn("Loading real data failed.", realDataError);
-            isDemo = true;
-            // 如果加载失败，尝试 mock
+            if (res.ok) {
+                const json = await res.json();
+                if (json.data && json.history) {
+                    snapshot = json.data;
+                    history = json.history;
+                    isApi = true;
+                    console.log("Loaded data from Serverless API");
+                }
+            }
+        } catch (e) {
+            console.log("API fetch failed/timeout, falling back to static files.");
+        }
+
+        // 2. 如果 API 失败，回退到静态文件 (本地开发或 API 故障时)
+        if (!snapshot) {
             try {
+                const [dataRes, historyRes] = await Promise.all([
+                    fetch('data.json?t=' + Date.now()),
+                    fetch('history.json?t=' + Date.now())
+                ]);
+
+                if (dataRes.ok && historyRes.ok) {
+                    snapshot = await dataRes.json();
+                    history = await historyRes.json();
+                    console.log("Loaded data from Static Files");
+                } else {
+                    throw new Error("Missing static data");
+                }
+            } catch (staticErr) {
+                // 3. 最后回退到 Mock 数据
+                console.warn("Loading real data failed, using mock.");
+                isDemo = true;
                 const [mockDataRes, mockHistoryRes] = await Promise.all([
                     fetch('mock_data.json'),
                     fetch('mock_history.json')
                 ]);
-                data = await mockDataRes.json();
+                snapshot = await mockDataRes.json();
                 history = await mockHistoryRes.json();
                 showDemoBadge();
-            } catch (e) {
-                console.error("Failed to load both real and mock data");
-                return;
             }
         }
 
-        updateKPIs(data);
-        updateTable(data.positions);
-        updateAllocationChart(data.positions);
-        updateTrendChart(history);
+        // 渲染数据
+        if (snapshot && history) {
+            updateKPIs(snapshot);
+            updateTable(snapshot.positions);
+            updateAllocationChart(snapshot.positions);
 
-        const timeLabel = document.getElementById('update-time');
-        if (timeLabel) {
-            timeLabel.textContent = `Last updated: ${data.updated_at || new Date().toLocaleTimeString()}`;
-            if (isDemo) timeLabel.textContent += " (DEMO MODE)";
+            // 缓存并更新图表
+            window.chartHistory = history;
+            filterChartHistory(); // 使用缓存更新图表
+
+            // 更新时间标签
+            const timeLabel = document.getElementById('update-time');
+            if (timeLabel) {
+                timeLabel.textContent = `Last updated: ${snapshot.updated_at || new Date().toLocaleTimeString()}`;
+                if (isDemo) timeLabel.textContent += " (DEMO)";
+                if (isApi) timeLabel.textContent += " (LIVE)";
+            }
+
+            if (status) {
+                status.textContent = "Updated";
+                setTimeout(() => { status.textContent = ""; }, 2000);
+            }
         }
 
     } catch (e) {
-        console.error("Failed to fetch data:", e);
+        console.error("Critical error fetching data:", e);
+        if (status) status.textContent = "Error";
+    } finally {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
     }
 }
 
+// 刷新功能现在只是重新调用 fetchData
+function refreshData() {
+    fetchData();
+}
+
 function setupRefreshButton() {
-    // 动态添加刷新按钮到 Header
     const header = document.querySelector('header');
     if (header && !document.getElementById('refresh-btn')) {
         const div = document.createElement('div');
@@ -114,54 +123,73 @@ function setupRefreshButton() {
     }
 }
 
+// ---------------------------------------------------------
+// UI Update Functions (Most kept same, charts updated to use window.chartHistory)
+// ---------------------------------------------------------
+
+let allocationChart = null;
+let trendChart = null;
+let currentTimeRange = 30;
+
+function setupTimeSelector() {
+    const buttons = document.querySelectorAll('.time-btn');
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTimeRange = parseInt(btn.dataset.days);
+            filterChartHistory(); // 从内存过滤，不重新请求
+        });
+    });
+}
+setupTimeSelector();
+
+function filterChartHistory() {
+    if (!window.chartHistory || window.chartHistory.length === 0) return;
+
+    try {
+        const now = new Date();
+        const cutoff = new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
+
+        // 简单日期过滤
+        const filtered = window.chartHistory.filter(h => {
+            const d = new Date(h.date);
+            return d >= cutoff;
+        });
+
+        updateTrendChart(filtered.length > 0 ? filtered : window.chartHistory);
+    } catch (e) {
+        console.error('Filter error:', e);
+    }
+}
+
 function showDemoBadge() {
     let badge = document.getElementById('demo-badge');
     if (!badge) {
         badge = document.createElement('div');
         badge.id = 'demo-badge';
         badge.innerText = 'DEMO MODE';
-        badge.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#e82127; color:white; padding:5px 10px; border-radius:4px; font-size:12px; font-weight:bold; box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+        badge.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#e82127; color:white; padding:5px 10px; border-radius:4px; font-size:12px; font-weight:bold; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:9999;';
         document.body.appendChild(badge);
     }
 }
 
 function formatCurrency(num) {
+    if (num === undefined || num === null) return "$0.00";
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
 }
 
 function getStockColor(symbol) {
-    // 强制指定颜色 (主要持仓)
     const fixedColors = {
-        'TSLA': '#E31937', // Red
-        'NVDA': '#76B900', // Green
-        'IBKR': '#B71C1C'  // Dark Red
+        'TSLA': '#E31937', 'NVDA': '#76B900', 'IBKR': '#B71C1C',
+        'QQQ': '#F7931A', 'QQQM': '#F7931A', 'SPY': '#2962FF',
+        'AAPL': '#A2AAAD', 'MSFT': '#00A4EF', 'GOOGL': '#4285F4',
+        'AMZN': '#FF9900', 'META': '#0668E1'
     };
-
     if (fixedColors[symbol]) return fixedColors[symbol];
-
-    // 自动分配高对比度色盘 (避免相似色)
-    // 调色板来源: Material Design 500/A200 + Distinct Sets
-    const palette = [
-        '#2979FF', // Blue A400
-        '#FF9100', // Orange A400
-        '#00E676', // Green A400
-        '#651FFF', // Deep Purple A400
-        '#FF1744', // Red A400
-        '#00B0FF', // Light Blue A400
-        '#F50057', // Pink A400
-        '#76FF03', // Light Green A400
-        '#FFC400', // Amber A400
-        '#D500F9', // Purple A400
-        '#1DE9B6', // Teal A400
-        '#FF3D00'  // Deep Orange A400
-    ];
-
-    // 使用简单的哈希算法确保同一个 Symbol 总是分配到同一个颜色
+    const palette = ['#2979FF', '#FF9100', '#00E676', '#651FFF', '#FF1744', '#00B0FF', '#F50057', '#76FF03', '#FFC400', '#D500F9', '#1DE9B6', '#FF3D00'];
     let hash = 0;
-    for (let i = 0; i < symbol.length; i++) {
-        hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
-    }
-
+    for (let i = 0; i < symbol.length; i++) hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
     return palette[Math.abs(hash) % palette.length];
 }
 
@@ -170,19 +198,25 @@ function updateKPIs(data) {
     document.getElementById('total-value').textContent = formatCurrency(pf.total_value);
 
     const pnlEl = document.getElementById('total-pnl');
-    // 使用 day_pnl (今日盈亏) 替代 total_pnl (总盈亏)
-    const sign = pf.day_pnl >= 0 ? '+' : '';
-    pnlEl.textContent = `${sign}${formatCurrency(pf.day_pnl)} (${sign}${pf.day_pnl_pct.toFixed(2)}%)`;
-    pnlEl.className = `value ${pf.day_pnl >= 0 ? 'positive' : 'negative'}`;
+    const dayPnl = pf.day_pnl || 0;
+    const dayPct = pf.day_pnl_pct || 0;
+
+    // Day P&L
+    const sign = dayPnl >= 0 ? '+' : '';
+    pnlEl.textContent = `${sign}${formatCurrency(dayPnl)} (${sign}${dayPct.toFixed(2)}%)`;
+    pnlEl.className = `value ${dayPnl >= 0 ? 'positive' : 'negative'}`;
 
     document.getElementById('cash-value').textContent = formatCurrency(pf.cash);
 }
 
 function updateTable(positions) {
     const tbody = document.getElementById('holdings-body');
+    if (!tbody) return;
+
     tbody.innerHTML = positions.map(p => {
-        const pnlClass = p.pnl_percent >= 0 ? 'positive' : 'negative';
-        const sign = p.pnl_percent >= 0 ? '+' : '';
+        const pnlPct = p.pnl_percent || 0;
+        const pnlClass = pnlPct >= 0 ? 'positive' : 'negative';
+        const sign = pnlPct >= 0 ? '+' : '';
         return `
             <tr>
                 <td>
@@ -194,45 +228,41 @@ function updateTable(positions) {
                 <td>${p.quantity}</td>
                 <td>${formatCurrency(p.current_price)}</td>
                 <td style="color:#a0a0a0">${(p.allocation_percent || 0).toFixed(1)}%</td>
-                <td class="${pnlClass}">${sign}${p.pnl_percent.toFixed(2)}%</td>
+                <td class="${pnlClass}">${sign}${pnlPct.toFixed(2)}%</td>
                 <td>${formatCurrency(p.market_value)}</td>
             </tr>
         `;
     }).join('');
+
+    // 应用集中度检查
+    const totalVal = positions.reduce((acc, p) => acc + p.market_value, 0);
+    const warnings = checkConcentration(positions, totalVal);
+    applyConcentrationWarnings(warnings);
 }
 
 function updateAllocationChart(positions) {
-    const ctx = document.getElementById('allocationChart').getContext('2d');
+    const ctx = document.getElementById('allocationChart');
+    if (!ctx) return;
 
-    // 计算总市值用于计算百分比 (也可以直接用 p.allocation_percent)
     const total = positions.reduce((acc, p) => acc + p.market_value, 0);
-
-    // 生成带百分比的标签
-    const labels = positions.map(p => {
-        const pct = ((p.market_value / total) * 100).toFixed(1);
-        return `${p.symbol} (${pct}%)`;
-    });
-
+    const labels = positions.map(p => `${p.symbol} (${((p.market_value / total) * 100).toFixed(1)}%)`);
     const data = positions.map(p => p.market_value);
     const colors = positions.map(p => getStockColor(p.symbol));
+    const isMobile = window.innerWidth < 768;
 
     if (allocationChart) {
         allocationChart.data.labels = labels;
         allocationChart.data.datasets[0].data = data;
         allocationChart.data.datasets[0].backgroundColor = colors;
-        allocationChart.options.plugins.legend.labels.font.size = 14; // Update font size dynamically
         allocationChart.update();
     } else {
-        // 响应式配置：手机端图例在下，桌面端在右
-        const isMobile = window.innerWidth < 768;
-
-        allocationChart = new Chart(ctx, {
+        allocationChart = new Chart(ctx.getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
-                    data: data, // Corrected from 'values'
-                    backgroundColor: colors, // Corrected from 'bgColors'
+                    data: data,
+                    backgroundColor: colors,
                     borderWidth: 0,
                     hoverOffset: 10
                 }]
@@ -240,20 +270,11 @@ function updateAllocationChart(positions) {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '65%', // 更细的圆环
+                cutout: '65%',
                 plugins: {
                     legend: {
-                        position: isMobile ? 'bottom' : 'right', // 手机端放下边
-                        labels: {
-                            color: '#a0a0a0',
-                            font: {
-                                size: 12,
-                                family: "'Inter', sans-serif"
-                            },
-                            padding: 15,
-                            boxWidth: 12,
-                            usePointStyle: true
-                        }
+                        position: isMobile ? 'bottom' : 'right',
+                        labels: { color: '#a0a0a0', font: { family: "'Inter', sans-serif", size: 12 }, padding: 15, boxWidth: 12, usePointStyle: true }
                     },
                     tooltip: {
                         backgroundColor: 'rgba(37, 37, 37, 0.9)',
@@ -265,59 +286,46 @@ function updateAllocationChart(positions) {
                             label: function (context) {
                                 const val = context.raw;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const pct = (val / total * 100).toFixed(1) + '%';
-                                return ` ${context.label}: $${val.toLocaleString()} (${pct})`;
+                                return ` ${context.label}: $${val.toLocaleString()} (${(val / total * 100).toFixed(1)}%)`;
                             }
                         }
                     }
                 },
-                layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10
-                    }
-                }
+                layout: { padding: 10 }
             }
         });
     }
 }
 
 function updateTrendChart(history) {
-    const ctx = document.getElementById('trendChart').getContext('2d');
+    const ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    if (!history || history.length === 0) return;
 
     const dates = history.map(h => h.date);
     const values = history.map(h => h.value);
+    const isUp = values[values.length - 1] >= values[0];
 
-    // 1. 判断整体趋势 (涨/跌) 来决定颜色
-    const startVal = values[0] || 0;
-    const endVal = values[values.length - 1] || 0;
-    const isUp = endVal >= startVal;
-
-    // 定义颜色主题
     const colorTheme = isUp ? {
-        line: '#00E676', // Bright Green
-        start: 'rgba(0, 230, 118, 0.4)',
-        end: 'rgba(0, 230, 118, 0.0)'
+        line: '#00E676', start: 'rgba(0, 230, 118, 0.4)', end: 'rgba(0, 230, 118, 0.0)'
     } : {
-        line: '#FF1744', // Red A400
-        start: 'rgba(255, 23, 68, 0.4)',
-        end: 'rgba(255, 23, 68, 0.0)'
+        line: '#FF1744', start: 'rgba(255, 23, 68, 0.4)', end: 'rgba(255, 23, 68, 0.0)'
     };
 
-    // 2. 创建渐变填充
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    const canvasCtx = ctx.getContext('2d');
+    const gradient = canvasCtx.createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, colorTheme.start);
     gradient.addColorStop(1, colorTheme.end);
 
     if (trendChart) {
-        // 如果图表已存在，更新数据和颜色
         trendChart.data.labels = dates;
         trendChart.data.datasets[0].data = values;
         trendChart.data.datasets[0].borderColor = colorTheme.line;
         trendChart.data.datasets[0].backgroundColor = gradient;
         trendChart.update();
     } else {
-        trendChart = new Chart(ctx, {
+        trendChart = new Chart(canvasCtx, {
             type: 'line',
             data: {
                 labels: dates,
@@ -326,211 +334,87 @@ function updateTrendChart(history) {
                     data: values,
                     borderColor: colorTheme.line,
                     backgroundColor: gradient,
-                    borderWidth: 2, // 线条稍微细一点更显得精致
-                    fill: true,     // 开启填充
-                    tension: 0.4,   // 平滑曲线
-                    pointRadius: 0, // 默认隐藏数据点，更平滑
-                    pointHoverRadius: 6, // 鼠标悬停时显示大点
-                    pointBackgroundColor: '#fff', // 悬停点为白色
-                    pointBorderColor: colorTheme.line,
-                    pointBorderWidth: 2
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: colorTheme.line
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
+                interaction: { mode: 'index', intersect: false },
                 scales: {
                     y: {
-                        display: true,
-                        position: 'right', // y轴放右边更像专业软件
-                        grid: {
-                            color: '#333',
-                            borderDash: [5, 5], // 虚线网格
-                            drawBorder: false   // 不画y轴竖线
-                        },
-                        ticks: {
-                            color: '#666',
-                            font: { family: "'Inter', sans-serif", size: 10 },
-                            callback: (v) => '$' + (v / 1000).toFixed(0) + 'k'
-                        }
+                        position: 'right',
+                        grid: { color: '#333', borderDash: [5, 5], drawBorder: false },
+                        ticks: { color: '#666', callback: (v) => '$' + (v / 1000).toFixed(0) + 'k' }
                     },
                     x: {
-                        grid: { display: false }, // 隐藏x轴网格
-                        ticks: {
-                            color: '#666',
-                            maxTicksLimit: 6, // 限制日期显示数量
-                            maxRotation: 0,
-                            font: { family: "'Inter', sans-serif", size: 10 }
-                        }
+                        grid: { display: false },
+                        ticks: { color: '#666', maxTicksLimit: 6, maxRotation: 0 }
                     }
                 },
-                plugins: {
-                    legend: { display: false }, // 隐藏图例
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        padding: 10,
-                        displayColors: false, // 不显示颜色方块
-                        callbacks: {
-                            label: (ctx) => formatCurrency(ctx.raw)
-                        }
-                    }
-                }
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', displayColors: false, callbacks: { label: (ctx) => formatCurrency(ctx.raw) } } }
             }
         });
     }
 }
-    // --- Market Status Indicator ---
-    function updateMarketStatus() {
-        const statusEl = document.getElementById('market-status');
-        if (!statusEl) return;
-        
-        // Get current time in US Eastern
-        const now = new Date();
-        const options = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
-        const etTime = new Intl.DateTimeFormat('en-US', options).format(now);
-        const [hour, minute] = etTime.split(':').map(Number);
-        const totalMinutes = hour * 60 + minute;
-        
-        // Get day of week (0 = Sunday)
-        const dayOptions = { timeZone: 'America/New_York', weekday: 'short' };
-        const dayOfWeek = new Intl.DateTimeFormat('en-US', dayOptions).format(now);
-        
-        let status = 'closed';
-        let emoji = '⚪';
-        let text = 'Closed';
-        
-        // Weekend check
-        if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') {
-            status = 'closed';
-        } else {
-            // Pre-market: 4:00 - 9:30 (240 - 570 min)
-            // Regular:    9:30 - 16:00 (570 - 960 min)
-            // After:     16:00 - 20:00 (960 - 1200 min)
-            if (totalMinutes >= 240 && totalMinutes < 570) {
-                status = 'pre-market';
-                emoji = '🟡';
-                text = 'Pre-Market';
-            } else if (totalMinutes >= 570 && totalMinutes < 960) {
-                status = 'trading';
-                emoji = '🟢';
-                text = 'Trading';
-            } else if (totalMinutes >= 960 && totalMinutes < 1200) {
-                status = 'after-hours';
-                emoji = '🟠';
-                text = 'After-Hours';
-            }
-        }
-        
-        statusEl.textContent = emoji + ' ' + text;
-        statusEl.className = 'market-status ' + status;
-    }
-    
-    // Update every minute
-    updateMarketStatus();
-    setInterval(updateMarketStatus, 60000);
 
-    // --- Concentration Warning ---
-    function checkConcentration(holdings, totalValue) {
-        const threshold = 0.30; // 30%
-        const warnings = [];
-        
-        holdings.forEach(h => {
-            const pct = h.value / totalValue;
-            if (pct > threshold) {
-                warnings.push({
-                    symbol: h.symbol,
-                    percentage: (pct * 100).toFixed(1)
-                });
-            }
-        });
-        
-        return warnings;
+function updateMarketStatus() {
+    const statusEl = document.getElementById('market-status');
+    if (!statusEl) return;
+    const now = new Date();
+    const options = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
+    const etTime = new Intl.DateTimeFormat('en-US', options).format(now);
+    const [hour, minute] = etTime.split(':').map(Number);
+    const totalMinutes = hour * 60 + minute;
+    const dayOfWeek = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short' }).format(now);
+
+    let status = 'closed', emoji = '⚪', text = 'Closed';
+    if (dayOfWeek !== 'Sat' && dayOfWeek !== 'Sun') {
+        if (totalMinutes >= 240 && totalMinutes < 570) { status = 'pre-market'; emoji = '🟡'; text = 'Pre-Market'; }
+        else if (totalMinutes >= 570 && totalMinutes < 960) { status = 'trading'; emoji = '🟢'; text = 'Trading'; }
+        else if (totalMinutes >= 960 && totalMinutes < 1200) { status = 'after-hours'; emoji = '🟠'; text = 'After-Hours'; }
     }
-    
-    function applyConcentrationWarnings(warnings) {
-        // Add warning to table rows
+    statusEl.textContent = emoji + ' ' + text;
+    statusEl.className = 'market-status ' + status;
+}
+updateMarketStatus();
+setInterval(updateMarketStatus, 60000);
+
+function checkConcentration(holdings, totalValue) {
+    return holdings.filter(h => (h.market_value / totalValue) > 0.30).map(h => ({ symbol: h.symbol }));
+}
+
+function applyConcentrationWarnings(warnings) {
+    document.querySelectorAll('.concentration-warning').forEach(e => e.remove());
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.classList.remove('high-concentration');
+        const symbolText = row.querySelector('.symbol-cell').textContent.trim().split('\n')[1] || row.querySelector('.symbol-cell').textContent.trim();
+        // 简化匹配逻辑，只看文本包含
         warnings.forEach(w => {
-            const rows = document.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const symbolCell = row.querySelector('.symbol-cell');
-                if (symbolCell && symbolCell.textContent.includes(w.symbol)) {
-                    row.classList.add('high-concentration');
-                    // Add warning icon if not already there
-                    if (!symbolCell.querySelector('.concentration-warning')) {
-                        const warningSpan = document.createElement('span');
-                        warningSpan.className = 'concentration-warning';
-                        warningSpan.textContent = '⚠️';
-                        warningSpan.title = '持仓占比超过30%，存在集中度风险';
-                        symbolCell.appendChild(warningSpan);
-                    }
+            if (row.innerHTML.includes(w.symbol)) {
+                row.classList.add('high-concentration');
+                const cell = row.querySelector('.symbol-cell');
+                if (!cell.querySelector('.concentration-warning')) {
+                    const span = document.createElement('span');
+                    span.className = 'concentration-warning';
+                    span.textContent = ' ⚠️';
+                    span.title = 'High Concentration Risk (>30%)';
+                    cell.querySelector('.symbol-icon').after(span);
                 }
-            });
+            }
         });
-    }
-
-    // --- Time Range Selector ---
-    let currentTimeRange = 30;
-    
-    function setupTimeSelector() {
-        const buttons = document.querySelectorAll('.time-btn');
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                buttons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentTimeRange = parseInt(btn.dataset.days);
-                fetchHistory();
-            });
-        });
-    }
-    
-    async function fetchHistory() {
-        try {
-            const response = await fetch(`history.json?t=${new Date().getTime()}`);
-            if (!response.ok) return;
-            const history = await response.json();
-            
-            // Filter by time range
-            const now = new Date();
-            const cutoff = new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
-            const filtered = history.filter(h => new Date(h.date) >= cutoff);
-            
-            updateTrendChart(filtered);
-        } catch (e) {
-            console.error('Error fetching history:', e);
-        }
-    }
-    
-    setupTimeSelector();
-
-    // --- Pull to Refresh ---
-    let touchStartY = 0;
-    let isPulling = false;
-    
-    document.addEventListener('touchstart', (e) => {
-        if (window.scrollY === 0) {
-            touchStartY = e.touches[0].clientY;
-        }
-    }, { passive: true });
-    
-    document.addEventListener('touchmove', (e) => {
-        if (window.scrollY === 0 && e.touches[0].clientY > touchStartY + 60) {
-            isPulling = true;
-            document.body.classList.add('ptr-pulling');
-        }
-    }, { passive: true });
-    
-    document.addEventListener('touchend', async () => {
-        if (isPulling) {
-            isPulling = false;
-            document.body.classList.remove('ptr-pulling');
-            // Trigger refresh
-            const refreshBtn = document.getElementById('refresh-btn');
-            if (refreshBtn) refreshBtn.click();
-        }
     });
+}
+
+// Pull to refresh support
+let touchStartY = 0;
+let isPulling = false;
+document.addEventListener('touchstart', e => { if (window.scrollY === 0) touchStartY = e.touches[0].clientY; }, { passive: true });
+document.addEventListener('touchmove', e => { if (window.scrollY === 0 && e.touches[0].clientY > touchStartY + 60) { isPulling = true; document.body.classList.add('ptr-pulling'); } }, { passive: true });
+document.addEventListener('touchend', () => { if (isPulling) { isPulling = false; document.body.classList.remove('ptr-pulling'); refreshData(); } });
