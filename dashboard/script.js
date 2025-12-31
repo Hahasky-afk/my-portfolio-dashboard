@@ -235,7 +235,12 @@ function updateTable(positions) {
                     <div style="font-weight:500">${sign}${formatCurrency(dayPnl)}</div>
                     <div style="font-size:11px; opacity:0.8">${sign}${dayPct.toFixed(2)}%</div>
                 </td>
-                <td>${formatCurrency(p.market_value)}</td>
+                <td>
+                    <div style="font-weight:600">${formatCurrency(p.market_value)}</div>
+                    <div style="font-size:11px; color:${(p.total_pnl || 0) >= 0 ? '#00E676' : '#FF1744'}">
+                        ${(p.total_pnl || 0) >= 0 ? '+' : ''}${formatCurrency(p.total_pnl || 0)} (${(p.pnl_percent || 0).toFixed(2)}%)
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');

@@ -1,10 +1,10 @@
 {
-  "updated_at": "2025-12-31 10:44:01",
+  "updated_at": "2025-12-31 13:33:29",
   "portfolio": {
     "total_value": 747020.3937683105,
     "cash": 0.0,
-    "day_pnl": -3493.9528316894716,
-    "day_pnl_pct": -0.46554111157473127,
+    "day_pnl": -5529.419891357422,
+    "day_pnl_pct": -0.7347579908986648,
     "total_pnl_val": 431391.4937683105,
     "total_pnl_pct": 136.67680423697274
   },
@@ -15,8 +15,10 @@
       "cost_basis": 220.5,
       "current_price": 454.42999267578125,
       "market_value": 400352.8235473633,
+      "total_pnl": 206092.32354736328,
       "pnl_percent": 106.09069962620465,
-      "day_pnl": -3180.4164526367367,
+      "day_pnl": -4590.029357910156,
+      "day_pnl_percent": -1.1335005235871842,
       "allocation_percent": 53.593292350132714
     },
     {
@@ -25,8 +27,10 @@
       "cost_basis": 45.3,
       "current_price": 187.5399932861328,
       "market_value": 117775.1157836914,
+      "total_pnl": 89326.71578369141,
       "pnl_percent": 313.99557016806364,
-      "day_pnl": -106.76421630859875,
+      "day_pnl": -427.04498291015625,
+      "day_pnl_percent": -0.36128356718739385,
       "allocation_percent": 15.765984003405872
     },
     {
@@ -35,8 +39,10 @@
       "cost_basis": 180.0,
       "current_price": 255.0399932861328,
       "market_value": 105586.55722045898,
+      "total_pnl": 31066.557220458984,
       "pnl_percent": 41.68888515896268,
-      "day_pnl": -117.74437954101444,
+      "day_pnl": -252.54025268554688,
+      "day_pnl_percent": -0.23860771559359345,
       "allocation_percent": 14.134360735164456
     },
     {
@@ -45,8 +51,10 @@
       "cost_basis": 0.0,
       "current_price": 299.5799865722656,
       "market_value": 59915.997314453125,
+      "total_pnl": 59915.997314453125,
       "pnl_percent": 0.0,
-      "day_pnl": -214.00268554687045,
+      "day_pnl": -268.00537109375,
+      "day_pnl_percent": -0.44530998128197147,
       "allocation_percent": 8.020664203317072
     },
     {
@@ -55,8 +63,10 @@
       "cost_basis": 330.0,
       "current_price": 665.9500122070312,
       "market_value": 19978.500366210938,
+      "total_pnl": 10078.500366210938,
       "pnl_percent": 101.80303400213069,
-      "day_pnl": 268.5003662109375,
+      "day_pnl": 217.80029296875,
+      "day_pnl_percent": 1.102189154035447,
       "allocation_percent": 2.6744250267961625
     },
     {
@@ -65,8 +75,10 @@
       "cost_basis": 0.0,
       "current_price": 619.4299926757812,
       "market_value": 18582.899780273438,
+      "total_pnl": 18582.899780273438,
       "pnl_percent": 0.0,
-      "day_pnl": -19.500219726563728,
+      "day_pnl": -43.2000732421875,
+      "day_pnl_percent": -0.23193300573889924,
       "allocation_percent": 2.4876027395360443
     },
     {
@@ -75,8 +87,10 @@
       "cost_basis": 145.0,
       "current_price": 232.52999877929688,
       "market_value": 11626.499938964844,
+      "total_pnl": 4376.499938964844,
       "pnl_percent": 60.36551639951509,
-      "day_pnl": 34.81493896484409,
+      "day_pnl": 22.99957275390625,
+      "day_pnl_percent": 0.198212367199818,
       "allocation_percent": 1.5563832039866397
     },
     {
@@ -85,8 +99,10 @@
       "cost_basis": 25.0,
       "current_price": 180.83999633789062,
       "market_value": 9041.999816894531,
+      "total_pnl": 7791.999816894531,
       "pnl_percent": 623.3599853515625,
-      "day_pnl": -139.00018310546898,
+      "day_pnl": -166.99981689453125,
+      "day_pnl_percent": -1.8134414543984383,
       "allocation_percent": 1.210408697315822
     },
     {
@@ -95,8 +111,10 @@
       "cost_basis": 0.0,
       "current_price": 65.0,
       "market_value": 4160.0,
+      "total_pnl": 4160.0,
       "pnl_percent": 0.0,
-      "day_pnl": -19.840000000000146,
+      "day_pnl": -22.39990234375,
+      "day_pnl_percent": -0.5355753363325553,
       "allocation_percent": 0.5568790403452132
     }
   ]

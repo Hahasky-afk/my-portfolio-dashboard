@@ -112,9 +112,10 @@ def generate_snapshot_data():
             p['market_value'] = p['quantity'] * current_price
             
             cost = p.get('cost_basis', 0) * p['quantity']
-            # P&L %
+            # P&L (Total)
+            p['total_pnl'] = p['market_value'] - cost
             if cost != 0:
-                p['pnl_percent'] = (p['market_value'] - cost) / cost * 100
+                p['pnl_percent'] = (p['total_pnl']) / cost * 100
             else:
                 p['pnl_percent'] = 0.0
             
@@ -129,8 +130,33 @@ def generate_snapshot_data():
                 p['day_pnl_percent'] = 0.0
         else:
             p['market_value'] = 0.0
+            p['total_pnl'] = 0.0
             p['day_pnl'] = 0.0
             p['day_pnl_percent'] = 0.0
+    
+    # Retry logic for missing data (Double Check)
+    # 如果核心持仓还是0，尝试单独下载
+    for p in positions:
+        if p.get('current_price', 0) == 0 and 'manual_price' not in p:
+             sym = p['symbol']
+             try:
+                 print(f"Retrying fetch for {sym}...")
+                 df = yf.download(sym, period="5d", progress=False)
+                 if not df.empty:
+                     p['current_price'] = float(df['Close'].iloc[-1])
+                     prev = float(df['Close'].iloc[-2]) if len(df) >= 2 else float(df['Open'].iloc[-1])
+                     p['market_value'] = p['quantity'] * p['current_price']
+                     
+                     # Recalc totals
+                     cost = p.get('cost_basis', 0) * p['quantity']
+                     p['total_pnl'] = p['market_value'] - cost
+                     p['pnl_percent'] = (p['total_pnl'] / cost * 100) if cost else 0
+                     
+                     change = p['current_price'] - prev
+                     p['day_pnl'] = change * p['quantity']
+                     p['day_pnl_percent'] = (change / prev) * 100
+             except Exception as e:
+                 print(f"Retry failed for {sym}: {e}")
 
     # 3. 汇总组合数据
     total_market_value = sum(p.get('market_value', 0) for p in positions)
