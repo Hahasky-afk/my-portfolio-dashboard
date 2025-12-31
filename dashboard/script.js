@@ -179,18 +179,44 @@ function formatCurrency(num) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
 }
 
-function getStockColor(symbol) {
-    const fixedColors = {
-        'TSLA': '#E31937', 'NVDA': '#76B900', 'IBKR': '#B71C1C',
-        'QQQ': '#F7931A', 'QQQM': '#F7931A', 'SPY': '#2962FF',
-        'AAPL': '#A2AAAD', 'MSFT': '#00A4EF', 'GOOGL': '#4285F4',
-        'AMZN': '#FF9900', 'META': '#0668E1'
-    };
-    if (fixedColors[symbol]) return fixedColors[symbol];
-    const palette = ['#2979FF', '#FF9100', '#00E676', '#651FFF', '#FF1744', '#00B0FF', '#F50057', '#76FF03', '#FFC400', '#D500F9', '#1DE9B6', '#FF3D00'];
-    let hash = 0;
-    for (let i = 0; i < symbol.length; i++) hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
-    return palette[Math.abs(hash) % palette.length];
+// function getStockColor(symbol) { ... } // Deprecated in favor of ranked colors for chart
+
+function getRankedColor(index, total) {
+    // 扩展色盘：24种高对比度、适合暗色背景的颜色
+    const palette = [
+        '#2962FF', // Blue
+        '#FF3D00', // Deep Orange
+        '#00E676', // Green
+        '#D500F9', // Purple
+        '#FFD600', // Yellow
+        '#00B0FF', // Light Blue
+        '#FF1744', // Red
+        '#651FFF', // Deep Purple
+        '#1DE9B6', // Teal
+        '#FF9100', // Orange
+        '#C6FF00', // Lime
+        '#F50057', // Pink
+        '#76FF03', // Light Green
+        '#304FFE', // Indigo
+        '#00E5FF', // Cyan
+        '#FFC400', // Amber
+        '#18FFFF', // Cyan Accent
+        '#B388FF', // Deep Purple Light
+        '#FF80AB', // Pink Light
+        '#A7FFEB', // Teal Light
+        '#FFFF00', // Yellow Accent
+        '#CCFF90', // Light Green Accent
+        '#E040FB', // Purple Accent
+        '#FF5252'  // Red Accent
+    ];
+
+    // 如果持仓数超过色盘，循环使用但降低亮度以区分
+    if (index < palette.length) {
+        return palette[index];
+    } else {
+        // 简单的哈希回退或变暗逻辑
+        return palette[index % palette.length];
+    }
 }
 
 function updateKPIs(data) {
@@ -213,24 +239,25 @@ function updateTable(positions) {
     const tbody = document.getElementById('holdings-body');
     if (!tbody) return;
 
-    tbody.innerHTML = positions.map(p => {
+    tbody.innerHTML = positions.map((p, i) => {
         // 显示日盈亏金额和百分比
         const dayPnl = p.day_pnl || 0;
         const dayPct = p.day_pnl_percent || 0;
         const pnlClass = dayPnl >= 0 ? 'positive' : 'negative';
         const sign = dayPnl >= 0 ? '+' : '';
+        const color = getRankedColor(i, positions.length);
 
         return `
             <tr>
                 <td>
                     <div class="symbol-cell">
-                        <div class="symbol-icon" style="color:${getStockColor(p.symbol)}">${p.symbol[0]}</div>
+                        <div class="symbol-icon" style="color:${color}">${p.symbol[0]}</div>
                         ${p.symbol}
                     </div>
                 </td>
-                <td>${p.quantity}</td>
-                <td>${formatCurrency(p.current_price)}</td>
-                <td style="color:#a0a0a0">${(p.allocation_percent || 0).toFixed(1)}%</td>
+                <td class="col-shares">${p.quantity}</td>
+                <td class="col-price">${formatCurrency(p.current_price)}</td>
+                <td class="col-alloc" style="color:#a0a0a0">${(p.allocation_percent || 0).toFixed(1)}%</td>
                 <td class="${pnlClass}">
                     <div style="font-weight:500">${sign}${formatCurrency(dayPnl)}</div>
                     <div style="font-size:11px; opacity:0.8">${sign}${dayPct.toFixed(2)}%</div>
@@ -253,7 +280,8 @@ function updateAllocationChart(positions) {
     const total = positions.reduce((acc, p) => acc + p.market_value, 0);
     const labels = positions.map(p => `${p.symbol} (${((p.market_value / total) * 100).toFixed(1)}%)`);
     const data = positions.map(p => p.market_value);
-    const colors = positions.map(p => getStockColor(p.symbol));
+    // 使用基于排名的颜色生成，确保颜色不重复且美观
+    const colors = positions.map((_, i) => getRankedColor(i, positions.length));
     const isMobile = window.innerWidth < 768;
 
     if (allocationChart) {
@@ -269,14 +297,15 @@ function updateAllocationChart(positions) {
                 datasets: [{
                     data: data,
                     backgroundColor: colors,
-                    borderWidth: 0,
-                    hoverOffset: 10
+                    borderWidth: 2,
+                    borderColor: '#1a1a1a', // Dark border for better separation
+                    hoverOffset: 15
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '65%',
+                cutout: '60%',
                 plugins: {
                     legend: {
                         position: isMobile ? 'bottom' : 'right',
