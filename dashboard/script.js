@@ -214,7 +214,8 @@ function updateTable(positions) {
     if (!tbody) return;
 
     tbody.innerHTML = positions.map(p => {
-        const pnlPct = p.pnl_percent || 0;
+        // 使用日盈亏百分比
+        const pnlPct = p.day_pnl_percent || 0;
         const pnlClass = pnlPct >= 0 ? 'positive' : 'negative';
         const sign = pnlPct >= 0 ? '+' : '';
         return `

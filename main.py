@@ -87,8 +87,10 @@ def generate_snapshot_data():
                 change = current_price - prev_close
                 d_pnl = change * p['quantity']
                 p['day_pnl'] = d_pnl
+                p['day_pnl_percent'] = (change / prev_close) * 100
             else:
                 p['day_pnl'] = 0.0
+                p['day_pnl_percent'] = 0.0
         else:
             p['market_value'] = 0.0
             p['day_pnl'] = 0.0
