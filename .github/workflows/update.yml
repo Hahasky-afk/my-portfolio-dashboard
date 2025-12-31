@@ -2,10 +2,8 @@ name: Portfolio Auto Update
 
 on:
   schedule:
-    # 美股交易时段 + 中国白天 (每小时运行一次)
-    # UTC 13:00 - 21:00 (美东 08:00 - 16:00)
-    # UTC 00:00 - 08:00 (北京 08:00 - 16:00)
-    - cron: '0 0-8,13-21 * * *'
+    # 每小时运行一次（简化版，避免复杂 cron 语法）
+    - cron: '0 * * * *'
   workflow_dispatch: # 允许手动点击运行
 
 permissions:
@@ -17,12 +15,12 @@ jobs:
     
     steps:
     - name: Check out code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
 
     - name: Install dependencies
       run: |
@@ -37,5 +35,4 @@ jobs:
         git config --global user.name "Portfolio Bot"
         git config --global user.email "bot@github.com"
         git add dashboard/data.json dashboard/history.json
-        # 只有当有变化时才提交
         git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update portfolio data" && git push)
