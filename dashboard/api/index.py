@@ -1,7 +1,7 @@
 """
 Vercel Serverless Function: Portfolio Real-Time API
 前端调用 /api/index 获取实时投资组合数据
-这是一劳永逸的方案：不依赖静态文件，每次访问都实时获取最新数据
+一劳永逸方案：每次访问都实时获取最新数据，无需定时任务
 """
 from http.server import BaseHTTPRequestHandler
 import json
