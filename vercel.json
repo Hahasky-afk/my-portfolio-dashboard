@@ -9,11 +9,5 @@
             "source": "/(.*)",
             "destination": "/dashboard/$1"
         }
-    ],
-    "crons": [
-        {
-            "path": "/api/update",
-            "schedule": "0 * * * *"
-        }
     ]
 }
