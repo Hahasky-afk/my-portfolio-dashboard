@@ -23,25 +23,33 @@ async function fetchData() {
         let isApi = false;
 
         // 1. 优先尝试 Vercel Serverless API (实时数据)
-        try {
-            // 添加时间戳防止缓存
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8秒超时
+        // 冷启动可能需要较长时间，使用25秒超时 + 自动重试
+        const maxRetries = 2;
+        for (let attempt = 1; attempt <= maxRetries && !snapshot; attempt++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时
 
-            const res = await fetch('/api/index?t=' + Date.now(), { signal: controller.signal });
-            clearTimeout(timeoutId);
+                if (status && attempt > 1) status.textContent = `Retrying (${attempt}/${maxRetries})...`;
 
-            if (res.ok) {
-                const json = await res.json();
-                if (json.data && json.history) {
-                    snapshot = json.data;
-                    history = json.history;
-                    isApi = true;
-                    console.log("Loaded data from Serverless API");
+                const res = await fetch('/api/index?t=' + Date.now(), { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.data && json.history) {
+                        snapshot = json.data;
+                        history = json.history;
+                        isApi = true;
+                        console.log(`Loaded data from Serverless API (attempt ${attempt})`);
+                    }
+                }
+            } catch (e) {
+                console.log(`API fetch attempt ${attempt} failed:`, e.message);
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 1000)); // 重试前等待1秒
                 }
             }
-        } catch (e) {
-            console.log("API fetch failed/timeout, falling back to static files.");
         }
 
         // 2. 如果 API 失败，回退到静态文件 (本地开发或 API 故障时)
