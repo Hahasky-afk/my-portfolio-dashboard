@@ -4,6 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 自动触发更新
     setupRefreshButton();
 
+    // 初始化隐私模式
+    const privacyBtn = document.getElementById('privacy-btn');
+    if (privacyBtn) {
+        privacyBtn.textContent = isPrivacyMode ? '🙈' : '👁️';
+        privacyBtn.onclick = togglePrivacy;
+    }
+
     // 每一分钟自动刷新一次
     setInterval(fetchData, 60000);
 });
@@ -137,7 +144,7 @@ function setupRefreshButton() {
 
 let allocationChart = null;
 let trendChart = null;
-let currentTimeRange = 30;
+let currentTimeRange = 90; // 默认90天
 
 function setupTimeSelector() {
     const buttons = document.querySelectorAll('.time-btn');
@@ -156,6 +163,12 @@ function filterChartHistory() {
     if (!window.chartHistory || window.chartHistory.length === 0) return;
 
     try {
+        // 如果选择ALL(0)，显示全部数据
+        if (currentTimeRange === 0) {
+            updateTrendChart(window.chartHistory);
+            return;
+        }
+
         const now = new Date();
         const cutoff = new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
 
@@ -182,7 +195,23 @@ function showDemoBadge() {
     }
 }
 
+// 全局隐私模式状态
+let isPrivacyMode = localStorage.getItem('privacy_mode') === 'true';
+
+function togglePrivacy() {
+    isPrivacyMode = !isPrivacyMode;
+    localStorage.setItem('privacy_mode', isPrivacyMode);
+
+    // 更新图标
+    const btn = document.getElementById('privacy-btn');
+    if (btn) btn.textContent = isPrivacyMode ? '🙈' : '👁️';
+
+    // 重新渲染所有数据
+    refreshData();
+}
+
 function formatCurrency(num) {
+    if (isPrivacyMode) return "****";
     if (num === undefined || num === null) return "$0.00";
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
 }
@@ -230,6 +259,15 @@ function getRankedColor(index, total) {
 function updateKPIs(data) {
     const pf = data.portfolio;
     document.getElementById('total-value').textContent = formatCurrency(pf.total_value);
+
+    // 总收益率百分比
+    const totalPnlPctEl = document.getElementById('total-pnl-percent');
+    const totalPnlPct = pf.total_pnl_pct || 0;
+    const totalSign = totalPnlPct >= 0 ? '+' : '';
+    if (totalPnlPctEl) {
+        totalPnlPctEl.textContent = `${totalSign}${totalPnlPct.toFixed(2)}% Total Return`;
+        totalPnlPctEl.className = `sub-value ${totalPnlPct >= 0 ? 'positive' : 'negative'}`;
+    }
 
     const pnlEl = document.getElementById('total-pnl');
     const dayPnl = pf.day_pnl || 0;

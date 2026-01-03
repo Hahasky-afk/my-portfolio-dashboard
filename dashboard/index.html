@@ -26,6 +26,8 @@
                 <h1>Investment Tracking</h1>
             </div>
             <div class="status">
+                <button id="privacy-btn" class="icon-btn" title="Toggle Privacy Mode"
+                    style="margin-right: 10px; background:none; border:none; font-size:16px; cursor:pointer;">👁️</button>
                 <span id="update-time">Last updated: --:--</span>
                 <div class="indicator"></div>
             </div>
@@ -37,6 +39,7 @@
                 <div class="icon-box">💰</div>
                 <h3>Total Value</h3>
                 <div class="value" id="total-value">$0.00</div>
+                <div class="sub-value positive" id="total-pnl-percent">+0.00%</div>
             </div>
             <div class="card kpi-card">
                 <div class="icon-box">📈</div>
@@ -90,7 +93,13 @@
         <!-- Trend Chart -->
         <div class="card trend-section">
             <div class="card-header">
-                <h3>Portfolio Value (30 Days)</h3>
+                <h3>Portfolio Value</h3>
+                <div class="time-selector">
+                    <button class="time-btn" data-days="7">7D</button>
+                    <button class="time-btn" data-days="30">30D</button>
+                    <button class="time-btn active" data-days="90">90D</button>
+                    <button class="time-btn" data-days="0">ALL</button>
+                </div>
             </div>
             <div class="chart-container wide">
                 <canvas id="trendChart"></canvas>
